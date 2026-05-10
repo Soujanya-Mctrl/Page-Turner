@@ -4,22 +4,25 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { getPublicUrl } from "@/lib/utils/url";
 import { Lock } from "lucide-react";
+import Link from "next/link";
 
 interface BookCardProps {
+  id: string;
   title: string;
   coverUrl: string | null;
   progress: number;
   isEncrypted?: boolean;
 }
 
-export function BookCard({ title, coverUrl, progress, isEncrypted }: BookCardProps) {
+export function BookCard({ id, title, coverUrl, progress, isEncrypted }: BookCardProps) {
   const finalCoverUrl = getPublicUrl(coverUrl);
 
   return (
-    <motion.div
-      whileHover={{ y: -5 }}
-      className="group relative flex flex-col gap-2 cursor-pointer"
-    >
+    <Link href={`/read/${id}`}>
+      <motion.div
+        whileHover={{ y: -5 }}
+        className="group relative flex flex-col gap-2 cursor-pointer"
+      >
       <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-gray-100 shadow-md transition-shadow group-hover:shadow-xl">
         {finalCoverUrl ? (
           <Image
@@ -58,5 +61,6 @@ export function BookCard({ title, coverUrl, progress, isEncrypted }: BookCardPro
         </p>
       </div>
     </motion.div>
+    </Link>
   );
 }

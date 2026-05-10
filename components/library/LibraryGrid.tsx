@@ -5,8 +5,17 @@ import { BookCard } from "./BookCard";
 import { getBooksAction } from "@/lib/actions/book";
 import { UploadButton } from "./UploadButton";
 
+interface Book {
+  id: string;
+  title: string;
+  coverUrl: string | null;
+  currentPage: number;
+  totalPages: number | null;
+  isEncrypted: number;
+}
+
 export function LibraryGrid() {
-  const [books, setBooks] = useState<any[]>([]);
+  const [books, setBooks] = useState<Book[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -60,6 +69,7 @@ export function LibraryGrid() {
           {books.map((book) => (
             <BookCard
               key={book.id}
+              id={book.id}
               title={book.title}
               coverUrl={book.coverUrl}
               progress={Math.round((book.currentPage / (book.totalPages || 1)) * 100)}

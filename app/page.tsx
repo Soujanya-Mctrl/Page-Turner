@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { LibraryGrid } from "@/components/library/LibraryGrid";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 
 export default async function Home() {
   const session = await getServerSession(authOptions);
@@ -56,7 +57,7 @@ export default async function Home() {
           </Link>
           <div className="h-8 w-8 rounded-full bg-indigo-100 overflow-hidden border border-indigo-200">
             {session.user?.image ? (
-              <img src={session.user.image} alt={session.user.name || "User"} />
+              <Image src={session.user.image} alt={session.user.name || "User"} width={32} height={32} />
             ) : (
               <div className="flex h-full w-full items-center justify-center text-indigo-600 text-xs font-bold">
                 {session.user?.name?.[0] || "U"}
