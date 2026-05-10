@@ -1,10 +1,10 @@
-import { MetadataRoute } from 'next'
+import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'PageTurner',
     short_name: 'PageTurner',
-    description: 'A premium, privacy-first PDF reading experience.',
+    description: 'A privacy-first, offline-ready PDF reader.',
     start_url: '/',
     display: 'standalone',
     background_color: '#ffffff',
@@ -12,7 +12,7 @@ export default function manifest(): MetadataRoute.Manifest {
     icons: [
       {
         src: '/icon.png',
-        sizes: '1024x1024',
+        sizes: 'any',
         type: 'image/png',
       },
     ],

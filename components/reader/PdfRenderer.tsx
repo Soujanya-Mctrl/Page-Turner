@@ -18,21 +18,55 @@ export function PdfRenderer({
   zoom,
   theme,
 }: PdfRendererProps) {
+  const [direction, setDirection] = useState(0);
+  const prevPageRef = useRef(pageNumber);
+
+  useEffect(() => {
+    if (pageNumber > prevPageRef.current) {
+      setDirection(1);
+    } else if (pageNumber < prevPageRef.current) {
+      setDirection(-1);
+    }
+    prevPageRef.current = pageNumber;
+  }, [pageNumber]);
+
   const themeColors = {
     light: "bg-white",
     dark: "bg-gray-900 invert brightness-90",
     sepia: "bg-[#f4ecd8] sepia-[.3] contrast-[.9]",
   };
 
+  const variants = {
+    enter: (direction: number) => ({
+      x: direction > 0 ? 100 : direction < 0 ? -100 : 0,
+      opacity: 0,
+    }),
+    center: {
+      zIndex: 1,
+      x: 0,
+      opacity: 1,
+    },
+    exit: (direction: number) => ({
+      zIndex: 0,
+      x: direction < 0 ? 100 : direction > 0 ? -100 : 0,
+      opacity: 0,
+    }),
+  };
+
   return (
-    <div className={`relative flex items-center justify-center min-h-screen p-4 sm:p-8 ${themeColors[theme]} transition-colors duration-500`}>
-      <AnimatePresence mode="wait">
+    <div className={`relative flex items-center justify-center min-h-screen p-4 sm:p-8 ${themeColors[theme]} transition-colors duration-500 overflow-hidden`}>
+      <AnimatePresence mode="popLayout" custom={direction}>
         <motion.div
           key={`${pageNumber}-${zoom}`}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
+          custom={direction}
+          variants={variants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          transition={{
+            x: { type: "spring", stiffness: 300, damping: 30 },
+            opacity: { duration: 0.2 },
+          }}
           className="relative shadow-2xl rounded-sm overflow-hidden"
           style={{ maxWidth: "100%" }}
         >

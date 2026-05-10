@@ -89,3 +89,16 @@ export const readingProgress = pgTable("reading_progress", {
   pageNumber: integer("pageNumber").notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
+
+export const bookmarks = pgTable("bookmark", {
+  id: text("id").notNull().primaryKey(),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  bookId: text("bookId")
+    .notNull()
+    .references(() => books.id, { onDelete: "cascade" }),
+  pageNumber: integer("pageNumber").notNull(),
+  label: text("label"), // Optional user-provided label for the bookmark
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});

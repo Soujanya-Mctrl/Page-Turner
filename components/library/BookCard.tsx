@@ -14,8 +14,19 @@ interface BookCardProps {
   isEncrypted?: boolean;
 }
 
+import { useState, useEffect } from "react";
+import { getBookOffline } from "@/lib/db/indexeddb";
+import { WifiOff } from "lucide-react";
+
 export function BookCard({ id, title, coverUrl, progress, isEncrypted }: BookCardProps) {
   const finalCoverUrl = getPublicUrl(coverUrl);
+  const [isOffline, setIsOffline] = useState(false);
+
+  useEffect(() => {
+    getBookOffline(id).then((book) => {
+      if (book) setIsOffline(true);
+    });
+  }, [id]);
 
   return (
     <Link href={`/read/${id}`}>
@@ -37,6 +48,13 @@ export function BookCard({ id, title, coverUrl, progress, isEncrypted }: BookCar
           </div>
         )}
         
+        {/* Offline Badge */}
+        {isOffline && (
+          <div className="absolute top-2 right-2 rounded-full bg-green-500/80 p-1 text-white backdrop-blur-sm">
+            <WifiOff className="h-3 w-3" />
+          </div>
+        )}
+
         {/* Progress Bar Overlay */}
         <div className="absolute bottom-0 left-0 h-1.5 w-full bg-black/20 backdrop-blur-sm">
           <motion.div
@@ -52,9 +70,12 @@ export function BookCard({ id, title, coverUrl, progress, isEncrypted }: BookCar
           <h3 className="line-clamp-2 text-sm font-semibold text-gray-800 leading-tight">
             {title}
           </h3>
-          {isEncrypted && (
-            <Lock className="h-3 w-3 text-indigo-400 mt-0.5 shrink-0" />
-          )}
+          <div className="flex gap-1 mt-0.5 shrink-0">
+            {isOffline && <WifiOff className="h-3 w-3 text-green-500" />}
+            {isEncrypted && (
+              <Lock className="h-3 w-3 text-indigo-400" />
+            )}
+          </div>
         </div>
         <p className="text-xs text-gray-500 mt-1">
           {progress === 0 ? "Not started" : `${progress}% read`}

@@ -2,6 +2,14 @@
 
 import { SessionProvider } from "next-auth/react"
 
+import { PWAProvider } from "./PWAProvider"
+
 export function Providers({ children }: { children: React.ReactNode }) {
-  return <SessionProvider>{children}</SessionProvider>
+  return (
+    <SessionProvider>
+      <PWAProvider>
+        {children}
+      </PWAProvider>
+    </SessionProvider>
+  )
 }

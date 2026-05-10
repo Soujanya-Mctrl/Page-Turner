@@ -4,7 +4,10 @@ import { useReader } from "@/hooks/useReader";
 import { PdfRenderer } from "./PdfRenderer";
 import { ReaderHeader } from "./ReaderHeader";
 import { ReaderOverlay } from "./ReaderOverlay";
+import { ReaderSidebar } from "./ReaderSidebar";
 import { Loader2 } from "lucide-react";
+import { motion, useMotionValue, useTransform, AnimatePresence } from "framer-motion";
+import { useState } from "react";
 
 interface ReaderContainerProps {
   book: {
@@ -26,9 +29,13 @@ export function ReaderContainer({ book }: ReaderContainerProps) {
     currentPage,
     theme,
     zoom,
+    outline,
+    bookmarks,
     goToPage,
     changeTheme,
     changeZoom,
+    addBookmark,
+    removeBookmark,
   } = useReader({
     bookId: book.id,
     signedUrl: book.signedUrl,
@@ -36,6 +43,8 @@ export function ReaderContainer({ book }: ReaderContainerProps) {
     encryptionKey: book.encryptionKey,
     initialPage: book.currentPage,
   });
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -70,15 +79,40 @@ export function ReaderContainer({ book }: ReaderContainerProps) {
         title={book.title} 
         theme={theme} 
         setTheme={changeTheme} 
+        onOpenSidebar={() => setIsSidebarOpen(true)}
+      />
+
+      <ReaderSidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        outline={outline}
+        bookmarks={bookmarks}
+        onPageJump={goToPage}
+        onRemoveBookmark={removeBookmark}
+        currentPage={currentPage}
       />
       
-      <main className="overflow-auto h-screen">
-        <PdfRenderer
-          pdfDocument={pdfDocument}
-          pageNumber={currentPage}
-          zoom={zoom}
-          theme={theme}
-        />
+      <main className="overflow-hidden h-screen relative">
+        <motion.div
+          drag="x"
+          dragConstraints={{ left: 0, right: 0 }}
+          onDragEnd={(_, info) => {
+            const swipeThreshold = 50;
+            if (info.offset.x > swipeThreshold) {
+              goToPage(Math.max(currentPage - 1, 1));
+            } else if (info.offset.x < -swipeThreshold) {
+              goToPage(Math.min(currentPage + 1, book.totalPages));
+            }
+          }}
+          className="h-full w-full cursor-grab active:cursor-grabbing"
+        >
+          <PdfRenderer
+            pdfDocument={pdfDocument}
+            pageNumber={currentPage}
+            zoom={zoom}
+            theme={theme}
+          />
+        </motion.div>
       </main>
 
       <ReaderOverlay
@@ -86,6 +120,11 @@ export function ReaderContainer({ book }: ReaderContainerProps) {
         totalPages={pdfDocument.numPages}
         onPageChange={goToPage}
         onZoomChange={changeZoom}
+        onAddBookmark={addBookmark}
+        isBookmarked={bookmarks.some(b => b.pageNumber === currentPage)}
+        theme={theme}
+        onThemeChange={changeTheme}
+        zoom={zoom}
       />
     </div>
   );
