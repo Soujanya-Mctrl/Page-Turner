@@ -21,49 +21,68 @@ export function UploadButton() {
     const file = e.target.files?.[0];
     if (!file || file.type !== "application/pdf") return;
 
+    console.log("Starting upload for file:", file.name);
+
     try {
       setIsUploading(true);
       setUploadStatus("Processing PDF...");
 
       // 1. Extract cover and page count
+      console.log("Step 1: Extracting cover and page count...");
       const coverBlob = await extractPdfCover(file);
       const totalPages = await getPdfPageCount(file);
+      console.log("Cover extracted and pages counted:", totalPages);
 
       // 2. Encryption (Zero-Knowledge)
       setUploadStatus("Encrypting...");
+      console.log("Step 2: Encrypting PDF...");
       const pdfBuffer = await file.arrayBuffer();
       const key = await generateKey();
       const { encryptedData, iv } = await encryptData(pdfBuffer, key);
       const encryptedBlob = packEncryptedBlob(encryptedData, iv);
       const exportedKey = await exportKey(key);
+      console.log("PDF encrypted successfully");
 
       // 3. Upload Encrypted PDF to R2
       setUploadStatus("Uploading PDF...");
       const pdfKey = `books/${crypto.randomUUID()}.pdf.enc`;
+      console.log("Step 3: Getting presigned URL for PDF upload...", pdfKey);
       const pdfUploadUrl = await getPresignedUploadUrl(pdfKey, "application/octet-stream");
+      console.log("PDF upload URL obtained");
       
-      await fetch(pdfUploadUrl, {
+      const pdfResponse = await fetch(pdfUploadUrl, {
         method: "PUT",
         body: encryptedBlob,
         headers: { "Content-Type": "application/octet-stream" },
       });
 
+      if (!pdfResponse.ok) {
+        throw new Error(`Failed to upload PDF: ${pdfResponse.status} ${pdfResponse.statusText}`);
+      }
+      console.log("PDF uploaded successfully to S3");
+
       // 4. Upload Cover to R2 (Public/Unencrypted)
       setUploadStatus("Uploading Cover...");
       const coverKey = `covers/${crypto.randomUUID()}.webp`;
+      console.log("Step 4: Getting presigned URL for cover upload...", coverKey);
       const coverUploadUrl = await getPresignedUploadUrl(coverKey, "image/webp");
+      console.log("Cover upload URL obtained");
       
-      await fetch(coverUploadUrl, {
+      const coverResponse = await fetch(coverUploadUrl, {
         method: "PUT",
         body: coverBlob,
         headers: { "Content-Type": "image/webp" },
       });
 
+      if (!coverResponse.ok) {
+        throw new Error(`Failed to upload cover: ${coverResponse.status} ${coverResponse.statusText}`);
+      }
+      console.log("Cover uploaded successfully to S3");
+
       // 5. Save to Database
       setUploadStatus("Saving...");
-      // For R2, we store the Key (path) or the full URL if we have a public domain
-      // We'll use the key for now and construct the URL when needed
-      await createBookAction({
+      console.log("Step 5: Saving book to database...");
+      const result = await createBookAction({
         title: file.name.replace(".pdf", ""),
         blobUrl: pdfKey,
         coverUrl: coverKey,
@@ -72,10 +91,23 @@ export function UploadButton() {
         encryptionKey: exportedKey,
       });
 
+      if (!result.success) {
+        throw new Error("Failed to save book to database");
+      }
+      console.log("Book saved to database successfully:", result.bookId);
+
       alert("Book uploaded and encrypted successfully!");
     } catch (error) {
-      console.error("Upload failed:", error);
-      alert("Failed to upload book.");
+      console.error("Upload failed at some point:", error);
+      
+      let errorMessage = "Failed to upload book.";
+      if (error instanceof TypeError && error.message === "Failed to fetch") {
+        errorMessage = "Network error or CORS violation. Please ensure your storage bucket allows requests from this origin.";
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      alert(`Upload failed: ${errorMessage}`);
     } finally {
       setIsUploading(false);
       setUploadStatus(null);

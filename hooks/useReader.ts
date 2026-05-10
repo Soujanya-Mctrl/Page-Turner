@@ -3,10 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { importKey, decryptData, unpackEncryptedBlob } from "@/lib/encryption";
 import { updateReadingProgressAction } from "@/lib/actions/reading";
-import * as pdfjs from "pdfjs-dist";
-
-// Worker from CDN
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+import type * as PdfJS from "pdfjs-dist";
 
 interface UseReaderProps {
   bookId: string;
@@ -26,7 +23,7 @@ export function useReader({
   initialPage = 1,
 }: UseReaderProps) {
   const [currentPage, setCurrentPage] = useState(initialPage);
-  const [pdfDocument, setPdfDocument] = useState<pdfjs.PDFDocumentProxy | null>(null);
+  const [pdfDocument, setPdfDocument] = useState<PdfJS.PDFDocumentProxy | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [theme, setTheme] = useState<ReaderTheme>("light");
@@ -37,6 +34,11 @@ export function useReader({
     async function loadPdf() {
       try {
         setIsLoading(true);
+        
+        // Dynamically import pdfjs to avoid SSR issues
+        const pdfjs = await import("pdfjs-dist");
+        pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+
         const response = await fetch(signedUrl);
         if (!response.ok) throw new Error("Failed to fetch book content");
 

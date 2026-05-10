@@ -1,0 +1,19 @@
+[
+  {
+    "corsRuleName": "AllowLocalDev",
+    "allowedOrigins": ["http://localhost:3000"],
+    "allowedHeaders": ["*"],
+    "allowedOperations": [
+      "s3_get",
+      "s3_put",
+      "s3_post",
+      "s3_delete",
+      "s3_head",
+      "b2_download_file_by_name",
+      "b2_upload_file",
+      "b2_upload_part"
+    ],
+    "exposeHeaders": ["ETag"],
+    "maxAgeSeconds": 3600
+  }
+]

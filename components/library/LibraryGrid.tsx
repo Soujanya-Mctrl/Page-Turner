@@ -3,7 +3,12 @@
 import { useEffect, useState } from "react";
 import { BookCard } from "./BookCard";
 import { getBooksAction } from "@/lib/actions/book";
-import { UploadButton } from "./UploadButton";
+import dynamic from "next/dynamic";
+
+const UploadButton = dynamic(
+  () => import("./UploadButton").then((mod) => mod.UploadButton),
+  { ssr: false }
+);
 
 interface Book {
   id: string;

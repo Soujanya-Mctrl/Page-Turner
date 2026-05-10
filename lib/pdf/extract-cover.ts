@@ -1,13 +1,18 @@
-import * as pdfjs from "pdfjs-dist";
-
-// Set worker from CDN for easier setup in Next.js
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
-
 /**
  * Extracts the first page of a PDF as a Blob (image/webp)
  * to be used as a cover image.
  */
 export async function extractPdfCover(file: File): Promise<Blob> {
+  if (typeof window === "undefined") {
+    throw new Error("extractPdfCover can only be called on the client");
+  }
+
+  // Dynamically import pdfjs to avoid SSR issues with DOMMatrix
+  const pdfjs = await import("pdfjs-dist");
+  
+  // Set worker from CDN
+  pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+
   const arrayBuffer = await file.arrayBuffer();
   const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
   const pdf = await loadingTask.promise;
@@ -54,6 +59,13 @@ export async function extractPdfCover(file: File): Promise<Blob> {
  * Gets total pages from a PDF file.
  */
 export async function getPdfPageCount(file: File): Promise<number> {
+  if (typeof window === "undefined") {
+    throw new Error("getPdfPageCount can only be called on the client");
+  }
+
+  const pdfjs = await import("pdfjs-dist");
+  pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+
   const arrayBuffer = await file.arrayBuffer();
   const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
   const pdf = await loadingTask.promise;
