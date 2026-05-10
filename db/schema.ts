@@ -72,6 +72,8 @@ export const books = pgTable("book", {
   coverUrl: text("coverUrl"),
   currentPage: integer("currentPage").default(1).notNull(),
   totalPages: integer("totalPages"),
+  isEncrypted: integer("isEncrypted").default(0).notNull(), // 0 = false, 1 = true
+  encryptionKey: text("encryptionKey"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
