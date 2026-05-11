@@ -1,7 +1,11 @@
 [
   {
     "corsRuleName": "AllowLocalDev",
-    "allowedOrigins": ["http://localhost:3000"],
+    "allowedOrigins": [
+      "http://localhost:3000",
+      "http://192.168.0.101.nip.io:3000",
+      "*"
+    ],
     "allowedHeaders": ["*"],
     "allowedOperations": [
       "s3_get",

@@ -1,13 +1,6 @@
 "use client";
 
-import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Sun, Moon, Coffee, ZoomIn, ZoomOut, 
-  Maximize2, Minimize2, Bookmark, BookmarkCheck,
-  RotateCcw, Monitor
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { ReaderTheme } from "@/hooks/useReader";
 
 interface SettingsPopoverProps {
@@ -17,8 +10,8 @@ interface SettingsPopoverProps {
   onThemeChange: (theme: ReaderTheme) => void;
   zoom: number;
   onZoomChange: (delta: number) => void;
-  isBookmarked: boolean;
-  onAddBookmark: () => void;
+  isTwoPageMode: boolean;
+  onTwoPageModeToggle: () => void;
 }
 
 export function SettingsPopover({
@@ -28,118 +21,128 @@ export function SettingsPopover({
   onThemeChange,
   zoom,
   onZoomChange,
-  isBookmarked,
-  onAddBookmark,
+  isTwoPageMode,
+  onTwoPageModeToggle,
 }: SettingsPopoverProps) {
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Invisible backdrop to close */}
-          <div className="fixed inset-0 z-[60]" onClick={onClose} />
+          {/* Backdrop */}
+          <div className="fixed inset-0 z-50 pointer-events-auto" onClick={onClose} />
           
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 10 }}
-            className="fixed bottom-24 right-4 sm:right-1/2 sm:translate-x-[180px] w-72 bg-white/90 backdrop-blur-2xl border border-white/40 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] z-[70] overflow-hidden"
+            initial={{ opacity: 0, scale: 0.95, y: 10, x: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10, x: 20 }}
+            className="fixed top-16 right-4 w-72 bg-surface-container-high/95 backdrop-blur-2xl border border-outline-variant/30 rounded-3xl shadow-2xl z-[60] overflow-hidden"
           >
-            <div className="p-6 space-y-6">
-              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest">Reader Settings</h3>
+            <div className="p-5 space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-title-sm text-primary font-bold">Reader Settings</h3>
+                <button 
+                  onClick={onClose}
+                  className="p-1.5 hover:bg-surface-container-highest rounded-full transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[20px]">close</span>
+                </button>
+              </div>
 
               {/* Theme Section */}
               <div className="space-y-3">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                  <Monitor className="h-3 w-3" /> Appearance
+                <label className="text-label-caps text-on-surface-variant flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px]">palette</span> Appearance
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   <ThemeOption 
                     active={theme === "light"} 
                     onClick={() => onThemeChange("light")}
-                    icon={<Sun className="h-4 w-4" />}
                     label="Light"
-                    color="bg-white"
+                    color="bg-[#FFFFFF]"
                   />
                   <ThemeOption 
                     active={theme === "dark"} 
                     onClick={() => onThemeChange("dark")}
-                    icon={<Moon className="h-4 w-4" />}
                     label="Dark"
-                    color="bg-gray-900"
+                    color="bg-[#1A1C1E]"
                   />
                   <ThemeOption 
                     active={theme === "sepia"} 
                     onClick={() => onThemeChange("sepia")}
-                    icon={<Coffee className="h-4 w-4" />}
                     label="Sepia"
-                    color="bg-[#f4ecd8]"
+                    color="bg-[#F4ECD8]"
                   />
                 </div>
               </div>
 
-              {/* Zoom Section */}
+              {/* Layout Mode */}
               <div className="space-y-3">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                  <Maximize2 className="h-3 w-3" /> Zoom & Layout
+                <label className="text-label-caps text-on-surface-variant flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px]">auto_stories</span> Page Layout
                 </label>
-                <div className="flex items-center justify-between bg-gray-50 p-2 rounded-2xl border border-gray-100">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 hover:bg-white rounded-xl shadow-sm transition-all"
-                    onClick={() => onZoomChange(-0.1)}
+                <div className="grid grid-cols-2 gap-2 bg-surface-container-low p-1 rounded-2xl border border-outline-variant/20">
+                  <button
+                    onClick={() => isTwoPageMode && onTwoPageModeToggle()}
+                    className={`flex items-center justify-center gap-2 py-2 rounded-xl transition-all ${
+                      !isTwoPageMode 
+                        ? "bg-secondary-container text-on-secondary-container shadow-sm font-bold" 
+                        : "text-on-surface-variant hover:bg-surface-container-highest"
+                    }`}
                   >
-                    <ZoomOut className="h-4 w-4" />
-                  </Button>
-                  
-                  <span className="text-sm font-bold text-gray-900">{Math.round(zoom * 100)}%</span>
-                  
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 hover:bg-white rounded-xl shadow-sm transition-all"
-                    onClick={() => onZoomChange(0.1)}
+                    <span className="material-symbols-outlined text-[20px]">article</span>
+                    <span className="text-body-sm">Single</span>
+                  </button>
+                  <button
+                    onClick={() => !isTwoPageMode && onTwoPageModeToggle()}
+                    className={`flex items-center justify-center gap-2 py-2 rounded-xl transition-all ${
+                      isTwoPageMode 
+                        ? "bg-secondary-container text-on-secondary-container shadow-sm font-bold" 
+                        : "text-on-surface-variant hover:bg-surface-container-highest"
+                    }`}
                   >
-                    <ZoomIn className="h-4 w-4" />
-                  </Button>
+                    <span className="material-symbols-outlined text-[20px]">menu_book</span>
+                    <span className="text-body-sm">Spread</span>
+                  </button>
                 </div>
               </div>
 
-              {/* Actions Section */}
-              <div className="pt-2">
-                <Button
-                  onClick={() => {
-                    onAddBookmark();
-                    onClose();
-                  }}
-                  className={`w-full py-6 rounded-2xl transition-all flex items-center justify-center gap-2 font-bold ${
-                    isBookmarked 
-                      ? "bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-100" 
-                      : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100"
-                  }`}
-                >
-                  {isBookmarked ? (
-                    <>
-                      <BookmarkCheck className="h-5 w-5" />
-                      Bookmarked
-                    </>
-                  ) : (
-                    <>
-                      <Bookmark className="h-5 w-5" />
-                      Bookmark Page
-                    </>
-                  )}
-                </Button>
+              {/* Zoom Controls */}
+              <div className="space-y-3">
+                <label className="text-label-caps text-on-surface-variant flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px]">zoom_in</span> Magnification
+                </label>
+                <div className="flex items-center justify-between bg-surface-container-low p-2 rounded-2xl border border-outline-variant/20">
+                  <button
+                    onClick={() => onZoomChange(-0.1)}
+                    className="h-10 w-10 flex items-center justify-center hover:bg-surface-container-highest rounded-xl transition-all text-primary"
+                  >
+                    <span className="material-symbols-outlined text-[24px]">remove</span>
+                  </button>
+                  
+                  <div className="flex flex-col items-center">
+                    <span className="text-body-md font-bold text-primary">{Math.round(zoom * 100)}%</span>
+                    <button 
+                      onClick={() => onZoomChange(1.0 - zoom)}
+                      className="text-[10px] text-secondary font-bold uppercase tracking-tighter hover:underline"
+                    >
+                      Reset
+                    </button>
+                  </div>
+                  
+                  <button
+                    onClick={() => onZoomChange(0.1)}
+                    className="h-10 w-10 flex items-center justify-center hover:bg-surface-container-highest rounded-xl transition-all text-primary"
+                  >
+                    <span className="material-symbols-outlined text-[24px]">add</span>
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div className="bg-gray-50/50 p-4 border-t border-gray-100 flex justify-center">
-              <button 
-                onClick={() => onZoomChange(1.0 - zoom)}
-                className="text-[10px] font-bold text-gray-400 hover:text-indigo-600 transition-colors uppercase tracking-widest flex items-center gap-1.5"
-              >
-                <RotateCcw className="h-3 w-3" /> Reset to default
-              </button>
+            <div className="bg-surface-container-highest/30 p-4 border-t border-outline-variant/20 flex justify-center">
+              <p className="text-[10px] text-on-surface-variant/50 font-medium text-center leading-tight uppercase tracking-[0.1em]">
+                Stitch Reader Engine v1.0<br/>Enhanced for PageTurner
+              </p>
             </div>
           </motion.div>
         </>
@@ -148,22 +151,25 @@ export function SettingsPopover({
   );
 }
 
-function ThemeOption({ active, onClick, icon, label, color }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string; color: string }) {
+function ThemeOption({ active, onClick, label, color }: { active: boolean; onClick: () => void; label: string; color: string }) {
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border transition-all ${
+      className={`flex flex-col items-center gap-2 p-2 rounded-2xl border transition-all ${
         active 
-          ? "bg-white border-indigo-200 shadow-md ring-2 ring-indigo-50" 
-          : "bg-transparent border-transparent hover:bg-white/50"
+          ? "bg-surface-container-lowest border-secondary shadow-md ring-4 ring-secondary/5" 
+          : "bg-transparent border-transparent hover:bg-surface-container-highest/50"
       }`}
     >
-      <div className={`h-8 w-full rounded-lg ${color} border border-gray-200 shadow-inner flex items-center justify-center`}>
-        <div className={active ? "text-indigo-600" : "text-gray-400"}>
-          {icon}
-        </div>
+      <div className={`h-10 w-full rounded-xl ${color} border border-outline-variant/20 shadow-inner flex items-center justify-center relative overflow-hidden`}>
+        {active && (
+          <div className="absolute inset-0 flex items-center justify-center bg-secondary/10">
+            <span className="material-symbols-outlined text-secondary text-[20px] fill-[1]">check_circle</span>
+          </div>
+        )}
       </div>
-      <span className={`text-[10px] font-bold ${active ? "text-indigo-600" : "text-gray-400"}`}>{label}</span>
+      <span className={`text-[11px] font-bold ${active ? "text-secondary" : "text-on-surface-variant"}`}>{label}</span>
     </button>
   );
 }
+

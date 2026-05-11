@@ -41,6 +41,31 @@ export function useReader({
   const [theme, setTheme] = useState<ReaderTheme>("light");
   const [zoom, setZoom] = useState(1.0);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
+  const [isTwoPageMode, setIsTwoPageMode] = useState(false);
+
+  // Load persistence from localStorage
+  useEffect(() => {
+    const savedTheme = localStorage.getItem(`pageturner-theme`);
+    const savedZoom = localStorage.getItem(`pageturner-zoom`);
+    const savedLayout = localStorage.getItem(`pageturner-layout`);
+
+    if (savedTheme) setTheme(savedTheme as ReaderTheme);
+    if (savedZoom) setZoom(parseFloat(savedZoom));
+    if (savedLayout) setIsTwoPageMode(savedLayout === "two-page");
+  }, []);
+
+  // Save changes to localStorage
+  useEffect(() => {
+    localStorage.setItem(`pageturner-theme`, theme);
+  }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem(`pageturner-zoom`, zoom.toString());
+  }, [zoom]);
+
+  useEffect(() => {
+    localStorage.setItem(`pageturner-layout`, isTwoPageMode ? "two-page" : "one-page");
+  }, [isTwoPageMode]);
 
   // Load and decrypt PDF
   useEffect(() => {
@@ -187,7 +212,14 @@ export function useReader({
   }, [bookId, currentPage, initialPage]);
 
   const goToPage = useCallback((page: number) => {
+    // In two-page mode, we always want to start a spread on an odd page
+    // (e.g. 1-2, 3-4, 5-6) or simply allow jumping to any page and let renderer handle the pair.
+    // For now, we allow jumping to any page.
     setCurrentPage(page);
+  }, []);
+
+  const toggleTwoPageMode = useCallback(() => {
+    setIsTwoPageMode((prev) => !prev);
   }, []);
 
   const changeTheme = useCallback((newTheme: ReaderTheme) => {
@@ -212,5 +244,7 @@ export function useReader({
     changeZoom,
     addBookmark,
     removeBookmark,
+    isTwoPageMode,
+    toggleTwoPageMode,
   };
 }

@@ -1,10 +1,8 @@
 "use client";
 
-import { ChevronLeft, Sun, Moon, Coffee, Maximize2, Minimize2, Menu } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { ReaderTheme } from "@/hooks/useReader";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 
 interface ReaderHeaderProps {
@@ -12,90 +10,162 @@ interface ReaderHeaderProps {
   theme: ReaderTheme;
   setTheme: (theme: ReaderTheme) => void;
   onOpenSidebar: () => void;
+  zoom?: number;
+  onZoomChange?: (delta: number) => void;
+  isTwoPageMode?: boolean;
+  onToggleTwoPageMode?: () => void;
+  isBookmarked?: boolean;
+  onAddBookmark?: () => void;
+  onHideUI?: () => void;
+  isSidebarOpen?: boolean;
+  onOpenSettings?: () => void;
 }
 
-export function ReaderHeader({ title, theme, setTheme, onOpenSidebar }: ReaderHeaderProps) {
+export function ReaderHeader({ 
+  title, 
+  theme, 
+  setTheme, 
+  onOpenSidebar,
+  zoom = 1,
+  onZoomChange,
+  isTwoPageMode,
+  onToggleTwoPageMode,
+  isBookmarked,
+  onAddBookmark,
+  onHideUI,
+  isSidebarOpen,
+  onOpenSettings
+}: ReaderHeaderProps) {
   const router = useRouter();
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen();
-      setIsFullscreen(true);
     } else {
       if (document.exitFullscreen) {
         document.exitFullscreen();
-        setIsFullscreen(false);
       }
     }
   };
 
   return (
-    <motion.header 
-      initial={{ y: -20, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      className="fixed top-4 left-4 right-4 z-50 bg-white/70 backdrop-blur-xl border border-white/40 px-4 py-2 flex items-center justify-between rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] opacity-0 hover:opacity-100 focus-within:opacity-100 transition-all duration-300 group/header"
-    >
-      <div className="flex items-center gap-3">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={onOpenSidebar}
-          className="text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors"
-        >
-          <Menu className="h-5 w-5" />
-        </Button>
-
-        <div className="w-px h-4 bg-gray-200" />
-
-        <Button 
-          variant="ghost" 
-          size="icon" 
+    <header className="bg-surface-bright/80 backdrop-blur-lg shadow-sm flex justify-between items-center w-full px-4 py-2 z-40 sticky top-0 border-b border-outline-variant/10 text-primary">
+      <div className="flex items-center gap-4">
+        <button 
+          aria-label="Go back" 
           onClick={() => router.push("/")}
-          className="text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors"
+          className="p-2 text-primary hover:bg-surface-container-highest/50 rounded-full transition-all flex items-center justify-center group"
         >
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
-        <h2 className="text-sm font-semibold text-gray-900 truncate max-w-[150px] sm:max-w-md tracking-tight">
-          {title}
-        </h2>
+          <span className="material-symbols-outlined text-[24px] group-active:scale-90 transition-transform">arrow_back</span>
+        </button>
+        
+        <div className="flex items-center gap-3">
+          <button 
+            aria-label="Toggle Sidebar" 
+            onClick={onOpenSidebar}
+            className={`p-2 text-on-surface-variant hover:bg-surface-container-highest/50 rounded-full transition-all flex items-center justify-center ${isSidebarOpen ? "bg-surface-container-highest/30" : ""}`}
+          >
+            <span className="material-symbols-outlined text-[20px]">
+              {isSidebarOpen ? "menu_open" : "menu"}
+            </span>
+          </button>
+          <h1 className="font-display text-title-md text-primary font-bold hidden sm:block truncate max-w-[300px] lg:max-w-md">
+            {title}
+          </h1>
+        </div>
       </div>
 
-      <div className="flex items-center gap-1 sm:gap-2">
-        <div className="flex bg-gray-100/50 backdrop-blur-sm p-1 rounded-xl border border-gray-200/50">
-          <ThemeButton active={theme === "light"} onClick={() => setTheme("light")} icon={<Sun className="h-4 w-4" />} />
-          <ThemeButton active={theme === "dark"} onClick={() => setTheme("dark")} icon={<Moon className="h-4 w-4" />} />
-          <ThemeButton active={theme === "sepia"} onClick={() => setTheme("sepia")} icon={<Coffee className="h-4 w-4" />} />
+      <div className="flex items-center gap-2 sm:gap-4">
+        {/* Zoom Controls */}
+        {onZoomChange && (
+          <div className="hidden lg:flex items-center gap-1 bg-surface-container-low px-3 py-1 rounded-full text-on-surface-variant border border-surface-variant">
+            <span className="font-body text-body-sm mr-2">Zoom:</span>
+            <button 
+              aria-label="Zoom Out" 
+              onClick={() => onZoomChange(-0.1)}
+              className="p-1 hover:bg-surface-container-highest rounded-full transition-colors flex items-center justify-center"
+            >
+              <span className="material-symbols-outlined text-[18px]">remove</span>
+            </button>
+            <span className="font-body text-label-caps px-2 w-12 text-center">
+              {Math.round(zoom * 100)}%
+            </span>
+            <button 
+              aria-label="Zoom In" 
+              onClick={() => onZoomChange(0.1)}
+              className="p-1 hover:bg-surface-container-highest rounded-full transition-colors flex items-center justify-center"
+            >
+              <span className="material-symbols-outlined text-[18px]">add</span>
+            </button>
+          </div>
+        )}
+
+        <div className="h-6 w-px bg-outline-variant/30 hidden md:block mx-1"></div>
+
+        {/* Action Buttons */}
+        <button 
+          aria-label="Toggle Brightness" 
+          onClick={onHideUI}
+          className="p-2 text-on-surface-variant hover:bg-surface-container-highest/50 rounded-full transition-all flex items-center justify-center"
+        >
+          <span className="material-symbols-outlined text-[24px]">visibility_off</span>
+        </button>
+
+        <button 
+          aria-label="Layout Mode" 
+          onClick={onToggleTwoPageMode}
+          className={`p-2 text-on-surface-variant hover:bg-surface-container-highest/50 rounded-full transition-all flex items-center justify-center ${isTwoPageMode ? "text-secondary" : ""}`}
+        >
+          <span className="material-symbols-outlined text-[24px]">{isTwoPageMode ? "auto_stories" : "menu_book"}</span>
+        </button>
+
+        <button 
+          aria-label="Theme Palette" 
+          onClick={onOpenSettings}
+          className="p-2 text-on-surface-variant hover:bg-surface-container-highest/50 rounded-full transition-all flex items-center justify-center"
+        >
+          <span className="material-symbols-outlined text-[24px]">palette</span>
+        </button>
+
+        <div className="flex items-center gap-2 ml-2 px-3 py-1.5 rounded-full bg-surface-container-low border border-surface-variant hidden md:flex">
+          <span className="material-symbols-outlined text-[16px] text-secondary">cloud_done</span>
+          <span className="font-body text-label-caps text-on-surface-variant">Saved</span>
         </div>
 
-        <div className="w-px h-4 bg-gray-200 mx-1" />
-
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors"
-          onClick={toggleFullscreen}
+        <button 
+          aria-label="Bookmark" 
+          onClick={onAddBookmark}
+          className={`p-2 text-on-surface-variant hover:bg-surface-container-highest/50 rounded-full transition-all flex items-center justify-center ml-1 ${isBookmarked ? "text-secondary" : ""}`}
         >
-          {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-        </Button>
+          <span className={`material-symbols-outlined text-[24px] ${isBookmarked ? "fill-[1]" : ""}`}>
+            {isBookmarked ? "bookmark_added" : "bookmark_add"}
+          </span>
+        </button>
+
+        <button 
+          aria-label="Fullscreen" 
+          onClick={toggleFullscreen}
+          className="p-2 text-on-surface-variant hover:bg-surface-container-highest/50 rounded-full transition-all flex items-center justify-center"
+        >
+          <span className="material-symbols-outlined text-[24px]">
+            {isFullscreen ? "fullscreen_exit" : "fullscreen"}
+          </span>
+        </button>
+
+        <button aria-label="More Options" className="p-2 text-on-surface-variant hover:bg-surface-container-highest/50 rounded-full transition-all flex items-center justify-center ml-1">
+          <span className="material-symbols-outlined text-[24px]">more_vert</span>
+        </button>
       </div>
-    </motion.header>
+    </header>
   );
 }
 
-function ThemeButton({ active, onClick, icon }: { active: boolean; onClick: () => void; icon: React.ReactNode }) {
-  return (
-    <Button
-      variant="ghost"
-      size="icon"
-      className={`h-8 w-8 rounded-lg transition-all duration-200 ${
-        active 
-          ? "bg-white text-indigo-600 shadow-sm ring-1 ring-black/5" 
-          : "text-gray-500 hover:text-gray-900 hover:bg-white/50"
-      }`}
-      onClick={onClick}
-    >
-      {icon}
-    </Button>
-  );
-}

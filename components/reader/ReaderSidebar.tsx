@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { List, Bookmark, X, Trash2, ChevronRight, ChevronDown } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { PdfOutlineItem } from "@/hooks/useReader";
+import { Button } from "@/components/ui/button";
 
 interface ReaderSidebarProps {
   isOpen: boolean;
@@ -25,120 +24,88 @@ export function ReaderSidebar({
   onRemoveBookmark,
   currentPage,
 }: ReaderSidebarProps) {
-  const [activeTab, setActiveTab] = useState<"contents" | "bookmarks">("contents");
-
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* Backdrop */}
+    <>
+      {/* Mobile Backdrop */}
+      <AnimatePresence>
+        {isOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[60]"
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 md:hidden"
           />
+        )}
+      </AnimatePresence>
 
-          {/* Sidebar */}
-          <motion.div
-            initial={{ x: "-100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "-100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed inset-y-0 left-0 w-80 sm:w-96 bg-white/90 backdrop-blur-2xl border-r border-white/40 z-[70] shadow-2xl flex flex-col"
-          >
-            <div className="p-6 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900 tracking-tight">Navigation</h2>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onClose}
-                className="rounded-xl hover:bg-gray-100"
-              >
-                <X className="h-5 w-5 text-gray-500" />
-              </Button>
-            </div>
+      <motion.aside
+        initial={false}
+        animate={{ 
+          width: isOpen ? 280 : 0,
+          x: isOpen ? 0 : -20,
+          opacity: isOpen ? 1 : 0
+        }}
+        transition={{ type: "spring", damping: 25, stiffness: 200 }}
+        className={`bg-surface border-r border-outline-variant/20 flex flex-col flex-shrink-0 h-full overflow-hidden z-50 
+          ${isOpen ? "fixed inset-y-0 left-0 shadow-2xl md:shadow-none md:sticky top-0" : "absolute md:sticky top-0"}`}
+      >
+      <div className="w-[280px] h-full flex flex-col overflow-y-auto custom-scrollbar">
+        <div className="p-6">
+          <h2 className="text-title-md text-primary mb-6">Contents</h2>
+          
+          <nav className="flex flex-col gap-1">
+            {outline.length > 0 ? (
+              outline.map((item, idx) => (
+                <OutlineItem 
+                  key={idx} 
+                  item={item} 
+                  onJump={onPageJump} 
+                  currentPage={currentPage}
+                />
+              ))
+            ) : (
+              <p className="text-body-sm text-on-surface-variant/50 italic py-4">
+                No table of contents found.
+              </p>
+            )}
+          </nav>
 
-            {/* Tabs */}
-            <div className="px-6 flex gap-1 mb-4">
-              <TabButton
-                active={activeTab === "contents"}
-                onClick={() => setActiveTab("contents")}
-                icon={<List className="h-4 w-4" />}
-                label="Contents"
-              />
-              <TabButton
-                active={activeTab === "bookmarks"}
-                onClick={() => setActiveTab("bookmarks")}
-                icon={<Bookmark className="h-4 w-4" />}
-                label="Bookmarks"
-              />
-            </div>
-
-            {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto px-4 pb-8 custom-scrollbar">
-              {activeTab === "contents" ? (
-                <div className="space-y-1">
-                  {outline.length > 0 ? (
-                    outline.map((item, idx) => (
-                      <OutlineItem 
-                        key={idx} 
-                        item={item} 
-                        onJump={onPageJump} 
-                        currentPage={currentPage}
-                      />
-                    ))
-                  ) : (
-                    <div className="py-20 text-center">
-                      <p className="text-gray-400 text-sm italic">No table of contents found.</p>
-                    </div>
-                  )}
-                </div>
+          <div className="mt-12 pt-6 border-t border-outline-variant/20">
+            <h3 className="text-label-caps text-on-surface-variant mb-4 tracking-wider">
+              Bookmarks
+            </h3>
+            
+            <div className="flex flex-col gap-3">
+              {bookmarks.length > 0 ? (
+                bookmarks.map((bookmark) => (
+                  <BookmarkCard
+                    key={bookmark.id}
+                    bookmark={bookmark}
+                    onJump={onPageJump}
+                    onRemove={onRemoveBookmark}
+                    isCurrent={currentPage === bookmark.pageNumber}
+                  />
+                ))
               ) : (
-                <div className="space-y-3 mt-2">
-                  {bookmarks.length > 0 ? (
-                    bookmarks.map((bookmark) => (
-                      <BookmarkItem
-                        key={bookmark.id}
-                        bookmark={bookmark}
-                        onJump={onPageJump}
-                        onRemove={onRemoveBookmark}
-                        isCurrent={currentPage === bookmark.pageNumber}
-                      />
-                    ))
-                  ) : (
-                    <div className="py-20 text-center">
-                      <Bookmark className="h-10 w-10 text-gray-200 mx-auto mb-3" />
-                      <p className="text-gray-400 text-sm">No bookmarks yet.</p>
-                      <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-wider">Add them from the reader menu</p>
-                    </div>
-                  )}
+                <div className="text-center py-8">
+                  <span className="material-symbols-outlined text-[32px] text-surface-variant mb-2">
+                    bookmark
+                  </span>
+                  <p className="text-body-sm text-on-surface-variant/50">
+                    No bookmarks yet.
+                  </p>
                 </div>
               )}
             </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+          </div>
+        </div>
+      </div>
+    </motion.aside>
+    </>
   );
 }
 
-function TabButton({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${
-        active 
-          ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200" 
-          : "text-gray-500 hover:bg-gray-50"
-      }`}
-    >
-      {icon}
-      {label}
-    </button>
-  );
-}
 
 function OutlineItem({ item, onJump, currentPage, level = 0 }: { item: PdfOutlineItem; onJump: (p: number) => void; currentPage: number; level?: number }) {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -148,34 +115,20 @@ function OutlineItem({ item, onJump, currentPage, level = 0 }: { item: PdfOutlin
   return (
     <div className="flex flex-col">
       <div 
-        className={`group flex items-center gap-2 p-2 rounded-xl transition-all cursor-pointer ${
-          isActive ? "bg-indigo-50 text-indigo-700" : "hover:bg-gray-50 text-gray-700"
+        className={`group flex items-center gap-2 px-3 py-2 rounded-lg transition-colors cursor-pointer ${
+          isActive 
+            ? "bg-secondary-container/10 text-secondary font-bold border-l-2 border-secondary" 
+            : "text-on-surface-variant hover:bg-surface-container-highest"
         }`}
-        style={{ paddingLeft: `${level * 16 + 8}px` }}
+        style={{ paddingLeft: `${level * 16 + 12}px` }}
+        onClick={() => item.pageNumber && onJump(item.pageNumber)}
       >
-        {hasChildren ? (
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsExpanded(!isExpanded);
-            }}
-            className="p-1 hover:bg-gray-200/50 rounded-md transition-colors"
-          >
-            {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-          </button>
-        ) : (
-          <div className="w-5" />
-        )}
-        
-        <span 
-          className={`text-sm flex-1 truncate ${isActive ? "font-bold" : "font-medium"}`}
-          onClick={() => item.pageNumber && onJump(item.pageNumber)}
-        >
+        <span className="truncate flex-1 font-body-sm text-body-sm">
           {item.title}
         </span>
-
+        
         {item.pageNumber && (
-          <span className="text-[10px] font-mono opacity-40 group-hover:opacity-100 transition-opacity">
+          <span className={`font-body-sm text-body-sm ${isActive ? "text-secondary/70" : "text-on-surface-variant/50 group-hover:text-on-surface-variant"}`}>
             {item.pageNumber}
           </span>
         )}
@@ -198,39 +151,36 @@ function OutlineItem({ item, onJump, currentPage, level = 0 }: { item: PdfOutlin
   );
 }
 
-function BookmarkItem({ bookmark, onJump, onRemove, isCurrent }: { bookmark: any; onJump: (p: number) => void; onRemove: (id: string) => void; isCurrent: boolean }) {
+function BookmarkCard({ bookmark, onJump, onRemove, isCurrent }: { bookmark: any; onJump: (p: number) => void; onRemove: (id: string) => void; isCurrent: boolean }) {
   return (
     <div 
-      className={`group relative flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer ${
-        isCurrent 
-          ? "bg-indigo-50/50 border-indigo-200" 
-          : "bg-white border-gray-100 hover:border-indigo-200 hover:shadow-md"
+      className={`bg-surface-container-low p-3 rounded-lg border transition-all cursor-pointer group ${
+        isCurrent ? "border-secondary" : "border-surface-variant hover:border-outline-variant"
       }`}
       onClick={() => onJump(bookmark.pageNumber)}
     >
-      <div className="flex flex-col gap-1 overflow-hidden">
-        <div className="flex items-center gap-2">
-          <Bookmark className={`h-3 w-3 ${isCurrent ? "text-indigo-600 fill-indigo-600" : "text-gray-400"}`} />
-          <span className={`text-[10px] font-bold uppercase tracking-widest ${isCurrent ? "text-indigo-600" : "text-gray-400"}`}>
-            Page {bookmark.pageNumber}
-          </span>
-        </div>
-        <span className={`text-sm truncate ${isCurrent ? "font-bold text-gray-900" : "font-medium text-gray-700"}`}>
-          {bookmark.label}
+      <div className="flex justify-between items-start mb-2">
+        <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full bg-secondary-container/10 text-secondary text-[10px] font-label-caps">
+          Note
         </span>
+        <div className="flex items-center gap-2">
+          <span className="text-on-surface-variant/70 text-[10px] font-label-caps">
+            Pg {bookmark.pageNumber}
+          </span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove(bookmark.id);
+            }}
+            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-error-container hover:text-error rounded transition-all"
+          >
+            <span className="material-symbols-outlined text-[14px]">delete</span>
+          </button>
+        </div>
       </div>
-
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
-        onClick={(e) => {
-          e.stopPropagation();
-          onRemove(bookmark.id);
-        }}
-      >
-        <Trash2 className="h-4 w-4" />
-      </Button>
+      <p className="text-body-sm text-on-surface line-clamp-2">
+        {bookmark.label || `Bookmark at page ${bookmark.pageNumber}`}
+      </p>
     </div>
   );
 }

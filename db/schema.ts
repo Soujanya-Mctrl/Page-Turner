@@ -61,11 +61,22 @@ export const verificationTokens = pgTable(
 
 // App Tables
 
+export const categories = pgTable("category", {
+  id: text("id").notNull().primaryKey(),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
 export const books = pgTable("book", {
   id: text("id").notNull().primaryKey(),
   userId: text("userId")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
+  categoryId: text("categoryId")
+    .references(() => categories.id, { onDelete: "set null" }),
   title: text("title").notNull(),
   author: text("author"),
   blobUrl: text("blobUrl").notNull(),

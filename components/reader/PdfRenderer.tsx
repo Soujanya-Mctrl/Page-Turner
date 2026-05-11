@@ -1,84 +1,124 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, forwardRef } from "react";
 import type * as PdfJS from "pdfjs-dist";
-import { motion, AnimatePresence } from "framer-motion";
-import { Loader2 } from "lucide-react";
+import HTMLFlipBook from "react-pageflip";
 
 interface PdfRendererProps {
   pdfDocument: PdfJS.PDFDocumentProxy;
   pageNumber: number;
   zoom: number;
   theme: "light" | "dark" | "sepia";
+  isTwoPageMode?: boolean;
+  onPageFlip?: (pageIndex: number) => void;
+  flipBookRef?: React.MutableRefObject<any>;
 }
+
+const Page = forwardRef<HTMLDivElement, { number: number; children: React.ReactNode }>(
+  (props, ref) => {
+    return (
+      <div 
+        className="page bg-white premium-shadow rounded-lg border border-outline-variant/10 overflow-hidden flex items-center justify-center" 
+        ref={ref}
+        data-density="hard" 
+      >
+        {props.children}
+      </div>
+    );
+  }
+);
+Page.displayName = "Page";
 
 export function PdfRenderer({
   pdfDocument,
   pageNumber,
   zoom,
   theme,
+  isTwoPageMode = false,
+  onPageFlip,
+  flipBookRef,
 }: PdfRendererProps) {
-  const [direction, setDirection] = useState(0);
-  const prevPageRef = useRef(pageNumber);
-
-  useEffect(() => {
-    if (pageNumber > prevPageRef.current) {
-      setDirection(1);
-    } else if (pageNumber < prevPageRef.current) {
-      setDirection(-1);
-    }
-    prevPageRef.current = pageNumber;
-  }, [pageNumber]);
-
   const themeColors = {
-    light: "bg-white",
-    dark: "bg-gray-900 invert brightness-90",
-    sepia: "bg-[#f4ecd8] sepia-[.3] contrast-[.9]",
+    light: "bg-transparent",
+    dark: "bg-transparent invert brightness-90",
+    sepia: "bg-transparent sepia-[.3] contrast-[.9]",
   };
 
-  const variants = {
-    enter: (direction: number) => ({
-      x: direction > 0 ? 100 : direction < 0 ? -100 : 0,
-      opacity: 0,
-    }),
-    center: {
-      zIndex: 1,
-      x: 0,
-      opacity: 1,
-    },
-    exit: (direction: number) => ({
-      zIndex: 0,
-      x: direction < 0 ? 100 : direction > 0 ? -100 : 0,
-      opacity: 0,
-    }),
-  };
+  // Generate an array for all pages
+  const pages = Array.from({ length: pdfDocument.numPages }, (_, i) => i + 1);
+
+  // Sync external pageNumber to flipbook
+  useEffect(() => {
+    if (flipBookRef?.current?.pageFlip) {
+      const flipbook = flipBookRef.current.pageFlip();
+      if (flipbook) {
+        const currentPageIndex = flipbook.getCurrentPageIndex();
+        // The external pageNumber is 1-indexed, while the flipbook is 0-indexed
+        if (currentPageIndex !== pageNumber - 1) {
+          flipbook.flip(pageNumber - 1);
+        }
+      }
+    }
+  }, [pageNumber, flipBookRef]);
 
   return (
-    <div className={`relative flex items-center justify-center min-h-screen p-4 sm:p-8 ${themeColors[theme]} transition-colors duration-500 overflow-hidden`}>
-      <AnimatePresence mode="popLayout" custom={direction}>
-        <motion.div
-          key={`${pageNumber}-${zoom}`}
-          custom={direction}
-          variants={variants}
-          initial="enter"
-          animate="center"
-          exit="exit"
-          transition={{
-            x: { type: "spring", stiffness: 300, damping: 30 },
-            opacity: { duration: 0.2 },
-          }}
-          className="relative shadow-2xl rounded-sm overflow-hidden"
-          style={{ maxWidth: "100%" }}
-        >
-          <PageCanvas
-            pdfDocument={pdfDocument}
-            pageNumber={pageNumber}
-            zoom={zoom}
-          />
-        </motion.div>
-      </AnimatePresence>
+    <div className={`relative flex items-center justify-center h-full w-full p-4 sm:p-8 ${themeColors[theme]} transition-colors duration-500 overflow-hidden`}>
+      {/* @ts-ignore - HTMLFlipBook types are slightly restrictive but it works fine */}
+      <HTMLFlipBook
+        width={400 * zoom}
+        height={600 * zoom}
+        size="stretch"
+        minWidth={300}
+        maxWidth={1000}
+        minHeight={400}
+        maxHeight={1500}
+        maxShadowOpacity={0.5}
+        showCover={true}
+        mobileScrollSupport={true}
+        className="demo-book"
+        ref={flipBookRef}
+        onFlip={(e: any) => {
+          if (onPageFlip) {
+            // e.data contains the new 0-indexed page index
+            onPageFlip(e.data + 1); 
+          }
+        }}
+        usePortrait={!isTwoPageMode}
+      >
+        {pages.map((pageNum) => (
+          <Page key={pageNum} number={pageNum}>
+            <LazyPageCanvas
+              pdfDocument={pdfDocument}
+              pageNumber={pageNum}
+              zoom={zoom}
+              currentPage={pageNumber}
+            />
+          </Page>
+        ))}
+      </HTMLFlipBook>
     </div>
   );
+}
+
+function LazyPageCanvas({
+  pdfDocument,
+  pageNumber,
+  zoom,
+  currentPage,
+}: {
+  pdfDocument: PdfJS.PDFDocumentProxy;
+  pageNumber: number;
+  zoom: number;
+  currentPage: number;
+}) {
+  // Render canvas if within 3 pages of the current page to save memory
+  const shouldRender = Math.abs(pageNumber - currentPage) <= 3;
+
+  if (!shouldRender) {
+    return <div className="w-full h-full bg-white flex items-center justify-center text-gray-300">Loading...</div>;
+  }
+
+  return <PageCanvas pdfDocument={pdfDocument} pageNumber={pageNumber} zoom={zoom} />;
 }
 
 function PageCanvas({
@@ -104,10 +144,10 @@ function PageCanvas({
         setIsRendering(true);
         const page = await pdfDocument.getPage(pageNumber);
         
-        // Check if aborted after async getPage
         if (isAborted) return;
 
-        const viewport = page.getViewport({ scale: zoom * 2 }); // Render at 2x for sharpness
+        // Render at a higher scale for sharpness, then CSS will scale it down
+        const viewport = page.getViewport({ scale: zoom * 2 }); 
 
         const canvas = canvasRef.current;
         const context = canvas.getContext("2d");
@@ -147,22 +187,17 @@ function PageCanvas({
   }, [pdfDocument, pageNumber, zoom]);
 
   return (
-    <>
+    <div className="relative w-full h-full flex items-center justify-center bg-white">
       <canvas
         ref={canvasRef}
-        className="max-w-full h-auto block"
-        style={{ 
-          width: "auto", 
-          height: "auto",
-          maxHeight: "calc(100vh - 4rem)" 
-        }}
+        className="w-full h-full object-contain"
       />
       
       {isRendering && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/5 backdrop-blur-[2px]">
-          <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+        <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-[2px]">
+          <span className="material-symbols-outlined text-[32px] animate-spin text-secondary">progress_activity</span>
         </div>
       )}
-    </>
+    </div>
   );
 }

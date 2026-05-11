@@ -44,29 +44,7 @@ export default async function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
-      <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 py-3 sm:px-8 flex items-center justify-between">
-        <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600">
-          PageTurner
-        </span>
-        <div className="flex items-center gap-4">
-          <Link href="/api/auth/signout">
-            <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-900">
-              Sign out
-            </Button>
-          </Link>
-          <div className="h-8 w-8 rounded-full bg-indigo-100 overflow-hidden border border-indigo-200">
-            {session.user?.image ? (
-              <Image src={session.user.image} alt={session.user.name || "User"} width={32} height={32} />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-indigo-600 text-xs font-bold">
-                {session.user?.name?.[0] || "U"}
-              </div>
-            )}
-          </div>
-        </div>
-      </nav>
-      
+    <main className="min-h-screen bg-background">
       <LibraryGrid />
     </main>
   );
